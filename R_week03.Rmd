@@ -1,0 +1,87 @@
+---
+title: "R_Week03_Assignment_Valerie_Briot"
+author: "Valerie Briot"
+date: "November 15, 2015"
+output: html_document
+---
+
+This is an R Markdown document pertaining to week 03 assignment in R.
+This assignment demonstrate:
+  1.  fetching data web site and creation of data frame
+  2.  subsetting the data frame (columns and rows)
+  3.  renaming of the columns
+  4.  replacing values in data frame 
+
+Note: the code is done in base R
+
+```{r}
+# import data set from web page into data frame
+dfmushrooms=read.csv(file="https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data", header=FALSE, skip=0)
+
+# display characteristics of dataframe and column names
+str(dfmushrooms)
+
+names(dfmushrooms)
+
+# subset columns 1, 2, 3, 4, & 5 from original data frame
+dfmushrooms_c <- dfmushrooms[, c(1, 2, 3, 4, 6)]
+
+# subset rows 1 - 50
+dfmushrooms_c_r <- dfmushrooms_c[1:50,]
+
+# rename columns of reduced data frame
+names(dfmushrooms_c_r) <- c("Edibility", "Caps Shape", "Caps Surface", "Caps Color", "Odor")
+
+# display column name
+names(dfmushrooms_c_r)
+
+# remap value for each column for more significant entries
+
+# Edibility column, col1
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Edibility)[levels(Edibility) == "p"] <- "poisoneous")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Edibility)[levels(Edibility) == "e"] <- "edible")
+
+# Caps Shape column, col2
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Shape`)[levels(`Caps Shape`) == "b"] <- "bell")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Shape`)[levels(`Caps Shape`) == "c"] <- "conical")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Shape`)[levels(`Caps Shape`) == "x"] <- "convex")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Shape`)[levels(`Caps Shape`) == "f"] <- "flat")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Shape`)[levels(`Caps Shape`) == "k"] <- "knobbed")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Shape`)[levels(`Caps Shape`) == "s"] <- "sunken")
+
+# Caps Surface column, col3
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Surface`)[levels(`Caps Surface`) == "f"] <- "fibrous")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Surface`)[levels(`Caps Surface`) == "g"] <- "grooves")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Surface`)[levels(`Caps Surface`) == "y"] <- "scaly")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Surface`)[levels(`Caps Surface`) == "s"] <- "smooth")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Surface`)[levels(`Caps Surface`) == "f"] <- "fibrous")
+
+# Caps Color column, col4 
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "n"] <- "brown")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "b"] <- "buff")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "c"] <- "cinamon")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "g"] <- "gray")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "r"] <- "green")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "p"] <- "pink")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "u"] <- "purple")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "e"] <- "red")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "w"] <- "white")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(`Caps Color`)[levels(`Caps Color`) == "y"] <- "yellow")
+
+# Odor, col5 (6 from original dataframe)
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "a"] <- "almond")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "l"] <- "anise")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "c"] <- "creosote")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "y"] <- "fishy")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "f"] <- "foul")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "m"] <- "musty")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "n"] <- "none")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "p"] <- "pungent")
+dfmushrooms_c_r <-within(dfmushrooms_c_r, levels(Odor)[levels(Odor) == "s"] <- "spicy")
+
+# display transformed data frame
+dfmushrooms_c_r
+
+```
+
+
