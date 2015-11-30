@@ -1,0 +1,206 @@
+---
+title: "R_Week05_Final"
+author: "Valerie Briot"
+date: "November 29, 2015"
+output: html_document
+---
+
+This document pertains to the final Project for the R_Bridge Session.  We will be exploring the hflights data from the hflights package. All graphs will be done in ggplot2 so this package is also required.
+
+```{r}
+#install.packages("hflights")
+require(hflights)
+require(ggplot2)
+```
+
+####Data Structure:
+
+The data structure can be found at:
+[https://cran.r-project.org/web/packages/hflights/hflights.pdf](https://cran.r-project.org/web/packages/hflights/hflights.pdf)
+
+For this analysis, we will consider only a subset of the data:
+
+Only the top 4 carriers will be considered.
+Using a quick histogram base on "UniqueCarrier" (see graph below), it is clear that there are only 4 significant carriers:
+"XE", "CO", "WN", and to lesser degree "OO". 
+
+```{r, echo=FALSE}
+g1 <- ggplot(hflights, aes(x=UniqueCarrier)) + geom_histogram()
+g1
+```
+
+Furthermore, information that identify a particular flight or plane will not be relevant in our analysis.  Hence, we will remove the following columns from our analysis:
+"FlightNum" and "TailNum"
+
+Again, with a quick look at the data pertaining to cancellation, it is clear that very few flights are cancelled for any reason.  We will therefore filter out flights with a cancelled indicator = 1.
+
+```{r, echo=FALSE}
+g2 <- ggplot(hflights, aes(x=CancellationCode)) + geom_histogram()
+g2
+```
+
+We will focus our analysis on delays and how they relate or not to time of year.  To this affect, we will create an additional column based departure date that will indicate season and one based on time of departure that will indicate time of day/night.
+
+Note: We will perform all transformation and filtering on hflights_t, a copy of original dataframe hflights.
+
+####Data Transformation:
+
+1. Filter only data belonging to UniqueCarrier in ("XE", "CO", "WN", "OO")
+```{r}
+hflights_t <- hflights
+
+hflights_t <- hflights_t[hflights_t$UniqueCarrier %in% c("XE", "CO", "WN", "OO"), ]
+
+```
+
+2. Filter out any rows pertaining to a Cancellation; keep Cancelled = 0
+```{r}
+hflights_t <- hflights_t[hflights_t$Cancelled == 0, ]
+```
+
+3. Dropping unwanted columns:
+We will drop the following column from our hflights_t dataframe:
+FlightNum, TailNum, Cancelled, CancellationCode
+```{r}
+drop_columns <- c("FlightNum", "TailNum", "Cancelled", "CancellationCode")
+hflights_t <-hflights_t[, !(names(hflights_t) %in% drop_columns)]
+```
+
+4. Add Columns; 1 for "Season" and 1 for "TimeOfDay"
+Season: Winter, Spring, Summer, Fall
+from 01/01/2011 to 03/19/2011 -> Winter
+from 03/20/2011 to 06/19/2011 -> Spring
+from 06/21/2011 to 09/22/2011 -> Summer
+from 09/23/2011 to 12/20/2011 -> Fall
+from 12/21/2011 to 12/31/2011 -> Winter
+
+TimeOfDay: EarlyMorning, Morning, Afternoon, LateAfternoon, Evening, Night
+from  401 to  800 -> EarlyMorning
+from  801 to 1200 -> Morning
+from 1201 to 1600 -> Afternoon
+from 1601 to 2000 -> LateAfternoon
+from 2001 to 2400 -> Evening
+from 0001 to  400 -> Night
+
+We will map both DepTime and ArrTime.  We will write a function and then apply it to column DepTime and ArrTime.
+
+```{r}
+# function to map DepTime or ArrTime to group
+timeofday <- function(hhmm){
+  if (is.na(hhmm)){
+    timeofday_f <- "Unknown"
+  } else if(hhmm >= 1 && hhmm <= 400){
+    timeofday_f <- "Night"
+  } else if (hhmm <= 800){
+    timeofday_f <- "EarlyMorning"
+  } else if (hhmm <= 1200){
+    timeofday_f <- "Morning"
+  } else if (hhmm <= 1600){
+    timeofday_f <- "Afternoon"
+  } else if (hhmm <= 2000){
+    timeofday_f <- "LateAfternoon"
+  } else if (hhmm <= 2400){
+    timeofday_f <- "Evening"
+  } else{
+    timeofday_f <- "Unknown"
+  }
+  return(as.factor(timeofday_f))
+}
+hflights_t$DepTimeGroup <- mapply(timeofday, hflights_t$DepTime)
+hflights_t$ArrTimeGroup <- mapply(timeofday, hflights_t$ArrTime)
+
+# Mapp Season to Departure Month/Day
+
+monthdaytoseason <- function(month, day){
+  if (month == 1 || month == 2){
+    season_f <-"Winter"
+  } else if (month == 3 && day <= 19){
+    season_f <- "Winter"
+  } else if (month == 3 && day >= 20){
+    season_f <- "Spring"
+  } else if (month == 4 || month == 5){
+    season_f <- "Spring"
+  } else if (month == 6 && day <= 19){
+    season_f <- "Spring"
+  } else if (month == 6 && day >= 20){
+    season_f <- "Summer"
+  } else if (month == 7 || month == 8){
+    season_f <- "Summer"
+  } else if (month == 9 && day <= 22){
+    season_f <- "Summer"
+  } else if (month == 9 && day >= 22){
+    season_f <- "Fall"
+  } else if (month == 10 || month == 11){
+    season_f <- "Fall"
+  } else if (month == 12 && day <= 20){
+    season_f <- "Fall"
+  } else if (month == 12 && day >= 21){
+    season_f <- "Winter"
+  } else{
+    season_f <- "Unkown"
+  }
+  return(as.factor(season_f))
+  }
+hflights_t$Season <- mapply(monthdaytoseason, hflights_t$Month, hflights_t$DayofMonth)
+```
+5. Add DepPos and ArrPos columns, these columns will be set to TRUE if Delay >= 0 and to FALSE otherwise
+
+```{r}
+hflights_t$DepPos <- hflights_t$DepDelay >= 0
+hflights_t$ArrPos <- hflights_t$ArrDelay >= 0
+```
+####Summary Statistics:
+1. Statistics on original data
+```{r}
+summary(hflights)
+```
+
+2. Statistics on transformed data
+```{r}
+summary(hflights_t)
+```
+
+####Graphic Analysis
+We will analyse the data with respect to departure delay and seasons.
+
+```{r}
+g3 <- ggplot(hflights_t, aes(x=Season, y=DepDelay, fill=DepPos)) + geom_bar(stat="identity", position = "identity") + scale_fill_manual(values=c("#CCEEFF", "#FFDDDD"), guide = FALSE)
+g3
+```
+
+For each season, it is clear that there are long delays however, since this graph map the value and not the count it is difficult to identify where the is clustered.
+
+The next graph is a violin graph. Plotting each one per seasons.  We specify scale = count to represent the number of occurence.  We have opted for a violin graph after trying boxplot and realizing that the presence of ouliers make the graphing difficult.  It also made clear that the first graph is not a good representation of the data.
+```{r}
+g4 <- ggplot(hflights_t, aes(x=Season, y=DepDelay)) + geom_violin(scale = "count") 
+g4
+```
+
+From this graph, it appears that there is not a significant difference in the departure delayed (positive - true delayed, or negative - leaving early) based on the season.  The next graph is a histogram of the Departure delayed faceted by seasons.
+
+
+```{r}
+g5 <- ggplot(hflights_t, aes(x=DepDelay)) + geom_histogram(binwidth = 10, fill = "pink", colour = "black") + facet_grid(Season ~.)
+g5
+```
+
+There again it shows that seasons do not play a very significant role in the distribution of the data.  If anything it appears that spring has slightly higher number of delays.  The binwidth for this graph is 10.  Since the delays are in mininutes.  These seemed a reasonabile width to use.  To continue our exploration of the data we will try to supperimpose the carrier to determine whether these are a factors in the departure delays.
+
+```{r}
+g6 <- ggplot(hflights_t, aes(x=DepDelay, fill=as.factor(UniqueCarrier))) + geom_histogram(binwidth = 10, position = "identity", alpha = 0.2) + facet_grid(Season ~.)
+g6
+
+```
+In this histogram.  The carriers are represented with various colours and the data is not stacked but overlayed.
+
+Finally, we will look at the histogram without the season breakdown but keeping the carriers.
+
+```{r}
+g7 <- ggplot(hflights_t, aes(x=DepDelay, fill=as.factor(UniqueCarrier))) + geom_histogram(binwidth = 10, position = "identity", alpha = 0.2)
+g7
+g8 <- ggplot(hflights_t, aes(x=DepDelay)) + geom_histogram(binwidth = 10, fill = "pink", colour = "black") + facet_grid(UniqueCarrier ~ .)
+g8
+```
+From this graph, it appears that the carrier has an impact on the departure delayed.  However, we would need to study the data based on Frequency (i.e. # of delays/total flights).  "XE" has the most flights, followed by "CO", "WN", and then "OO".  These will be followed up in a different analysis.
+
+Thank you.

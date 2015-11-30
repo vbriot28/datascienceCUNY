@@ -1,0 +1,105 @@
+---
+title: "R_Week04_Assignment"
+author: "Valerie Briot"
+date: "November 28, 2015"
+output: html_document
+---
+
+This document pertains to exploratory data analysis in R using graphs.  The ggplot2 package is needed since the plotting is done using this package.
+
+The data set is from the list found at:
+http://vincentarelbundock.github.io/Rdatasets/
+and the data set = education.cvs
+
+Data format:
+6 variables and 50 observations, the data has 1 row header
+
+State:
+     State for which the data is relevant
+
+Region:
+     1=Northeastern, 2=Northcentral, 3=Southern, 4=Western
+
+x1:
+     Number of residents per thousand residing in urban areas in 1970
+
+x2: 
+     Per capita personal income in 1973
+     
+x3:
+     Number of residents per thousand under 18 years of age in 1974
+
+x4:
+     Per capita expenditure on public education in a state, projected for 1975
+
+
+We are first going to import the data and store it in a dataframe: education
+```{r}
+# using package ggplot2
+require(ggplot2)
+
+#Data Set = Education from vincentarelbundock/Rdatasets
+education_url <- "https://raw.github.com/vincentarelbundock/Rdatasets/master/csv/robustbase/education.csv"
+
+education <- read.csv(education_url, header = TRUE, row.names = 1)
+
+str(education)
+
+```
+
+We are now going to modify the column header and remap the regions to their names
+```{r}
+#Rename column header to more meaningful name (see description of data above)
+names(education)[3:6] <- c("Residents_urban_areas", "Per_capita_income", "Residents_under18", "Per_capita_school_expenditure")
+
+#Remap Region to their name
+education$Region <- factor(education$Region)
+
+education <- within(education, 
+{
+  levels(Region)[levels(Region) == "1"] <- "Northeastern"
+  levels(Region)[levels(Region) == "2"] <- "Northcentral"
+  levels(Region)[levels(Region) == "3"] <- "Southern"
+  levels(Region)[levels(Region) == "4"] <- "Western"
+})
+```
+
+we will reorder the states by "Per_capita_school_expenditure" column and plot the other variables with x=State
+
+```{r}
+# sort data frame by Per_capita_school_expenditure
+education$State <- reorder(education$State, education$Per_capita_school_expenditure)
+
+g1<-ggplot(education, aes(x=State, y=Residents_urban_areas, group=1)) + geom_line() + geom_point()
+g2<-ggplot(education, aes(x=State, y=Per_capita_income, group=1)) + geom_line() + geom_point()
+g3<-ggplot(education, aes(x=State, y=Residents_under18, group=1)) + geom_line() + geom_point()
+g4<-ggplot(education, aes(x=State, y=Per_capita_school_expenditure, group=1)) + geom_line() + geom_point()
+g1
+g2
+g3
+g4
+```
+Since the states are now sorted by "Per_capita_school_expenditure", if any of the other variables have an impact on this one, they should either follow the same progression or the opposite. From the graphs above, it does not appear that a high number of residents under 18 (which we would assume skew the population ratio adult/children towards children would corelates with higher spending on school.  However, from graph# 3 (g3) this does not appear to be the case.
+
+we will now try to plot "Per Capita School Expenditure" on as a function of "Per Capita Income" and "Residents under 18" respectively.
+
+```{r}
+g5<-ggplot(education, aes(x=Per_capita_income, y=Per_capita_school_expenditure)) + geom_point(shape=3, colour = "red")
+g5
+g6<-ggplot(education, aes(x=Residents_under18, y=Per_capita_school_expenditure)) + geom_point(shape=3, colour = "blue")
+g6
+```
+We will replot g5: x=Per_capita_income y=Per_capita_school_expenditure with a line regression (with the default 95% confidence in shaded area)
+
+```{r}
+g7<-ggplot(education, aes(x=Per_capita_income, y=Per_capita_school_expenditure)) + geom_point(shape=3, colour = "red") + stat_smooth(method=lm)
+g7
+```
+Finally, we will plot Histograms and boxplot of  "Per Capita School Expenditure" facetted by region
+```{r}
+g8 <-ggplot(education, aes(x=Per_capita_school_expenditure)) + geom_histogram(binwidth = 15, fill = "pink", colour = "black") + facet_grid(Region ~ .)
+
+g9<-ggplot(education, aes(x=Region, y=Per_capita_school_expenditure)) + geom_boxplot()
+
+g8
+g9
